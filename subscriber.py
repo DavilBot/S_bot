@@ -4,15 +4,12 @@ import requests
 import time
 import urllib
 import os.path
-#from binance_api import TradeBot
 import threading
 import pandas as pd
 TOKEN = "592999139:AAEpQFDBQ4s-pgjUNGEfsQVHGdiop4b0pi0"
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 
 class TeleTradeBot():
-#    thread = threading.Thread(target=super().trade_on)
-#    thread.daemon = True
     def get_url(self, url):
         response = requests.get(url)
         content = response.content.decode("utf8")
@@ -40,45 +37,61 @@ class TeleTradeBot():
         for update in updates["result"]:
             text = update["message"]["text"]
             chat = update["message"]["chat"]["id"]
-            df = pd.read_csv("subscribers.csv")
-            list_bots = df[str(chat)].tolist()
-            #df = df.drop([str(chat)], 1)
-            print(df)
-            tick = False
+            list_bots = []
+            data = {}
+            if(os.path.isfile('data.json')):
+                with open('data.json', 'r') as fp:
+                        data = json.load(fp)
+                        list_bots = data[str(chat)]
+            bots = [['cci', 'ppo', 'mfi'], ['macd', 'sma', 'aroon'], ['rsi', 'bollinger', 'b_indicator']]
+            frequency = [['send me every 4 days', 'send me every day', 'send me every 12 hours', 'send me every hour']]
+            if text in list_bots:
+                self.send_message("You have already subscribed to this tradebot", chat)
+                continue
             if text == "/start":
-                #keyboard = self.build_keyboard(list_names)#items
-                #self.send_message("",chat,keyboard)
                 self.send_message("Hello! Here you can subscribe on a single tradebot or all available and track the price.", chat)
-            elif text == "/subscribe_all":
+            elif text == "/sub_all":
+                data[str(chat)] = ['cci','macd','mfi']#list of all bots
+                with open('data.json', 'w') as fp:
+                    json.dump(data, fp)
                 self.send_message("Your subscribed to all tradebots", chat)
-            elif text == "/subscribe_cci":
-                for l in list_bots:
-                    if l == 'cci':
-                        tick = True
-                        continue
-                if tick == True:
-                    self.send_message("You already have subscribed on this bot", chat)
-                    continue
+            elif text == "/sub_par" or text =="/not_freq":
+                new_l = []
+                message = ""
+                if text =="/sub_par":
+                    new_l = bots
+                    message = "Choose bot"
                 else:
-                    list_bots.append("cci")
-                    df[str(chat)] = list_bots
-                    with open('subscribers.csv', 'w') as f:
-                        df.to_csv(f)
-                    self.send_message("You have successfully subscribed", chat)
-            elif text == "/subscribe_macd":
-                for l in list_bots:
-                    if l == 'macd':
-                        tick = True
-                        continue
-                if tick == True:
-                    self.send_message("You already have subscribed on this bot", chat)
-                    continue
-                else:
-                    list_bots.append("macd")
-                    df[str(chat)] = list_bots
-                    with open('subscribers.csv', 'w') as f:
-                        df.to_csv(f)
-                    self.send_message("You have successfully subscribed", chat)
+                    new_l = frequency
+                    message = "Choose time interval to receive announcements from tradebots"
+                keyboard = self.build_keyboard(new_l)
+                self.send_message(message, chat, keyboard)
+            elif text == "cci":
+                list_bots.append('cci')
+                data[str(chat)] = list_bots
+                with open('data.json', 'w') as fp:
+                    json.dump(data, fp)
+                self.send_message("You have successfully subscribed", chat)
+            elif text == "mfi":
+                list_bots.append('mfi')
+                data[str(chat)] = list_bots
+                with open('data.json', 'w') as fp:
+                    json.dump(data, fp)
+                self.send_message("You have successfully subscribed", chat)
+            elif text == "ppo":
+                list_bots.append('ppo')
+                data[str(chat)] = list_bots
+                with open('data.json', 'w') as fp:
+                    json.dump(data, fp)
+                self.send_message("You have successfully subscribed", chat)
+            elif text == "macd":
+                list_bots.append('macd')
+                data[str(chat)] = list_bots
+                with open('data.json', 'w') as fp:
+                    json.dump(data, fp)
+                self.send_message("You have successfully subscribed", chat)
+            else:
+                self.send_message("Type '/' to view commands", chat)
 
     def get_last_chat_id_and_text(self, updates):
         num_updates = len(updates["result"])
@@ -94,16 +107,8 @@ class TeleTradeBot():
             url += "&reply_markup={}".format(reply_markup)
         self.get_url(url)
 
-    def send_loop_message(self, chat_id, reply_markup = None):
-                text = "Your balance is (btc_amount) {},(coin_amount) {}.".format(self.btc_amount, self.coin_amount)
-                text = urllib.parse.quote_plus(text)
-                url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
-                if reply_markup:
-                    url += "&reply_markup={}".format(reply_markup)
-                self.get_url(url)
-
     def build_keyboard(self, items):
-        keyboard = [[item] for item in items]
+        keyboard = items#[[item] for item in items]
         reply_markup = {"keyboard":keyboard, "one_time_keyboard": True}
         return json.dumps(reply_markup)
 
@@ -113,6 +118,7 @@ class TeleTradeBot():
 #        super().__init__()
         while True:
             updates = self.get_updates(last_update_id)
+            print("OK")
             if len(updates["result"]) > 0:
                 last_update_id = self.get_last_update_id(updates) + 1
                 self.handle_updates(updates)
