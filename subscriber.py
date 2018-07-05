@@ -39,57 +39,88 @@ class TeleTradeBot():
             chat = update["message"]["chat"]["id"]
             list_bots = []
             data = {}
-            if(os.path.isfile('data.json')):
+            tick = "False"
+            message = ""
+            if(os.path.isfile('data.json') and os.path.isfile('Ticker.txt')):
                 with open('data.json', 'r') as fp:
                         data = json.load(fp)
                         list_bots = data[str(chat)]
+                with open('Ticker.txt', 'r') as r:
+                        tick = r.read()
             bots = [['cci', 'ppo', 'mfi'], ['macd', 'sma', 'aroon'], ['rsi', 'bollinger', 'b_indicator']]
-            frequency = [['send me every 4 days', 'send me every day', 'send me every 12 hours', 'send me every hour']]
-            if text in list_bots:
+            all_bots = ['cci', 'ppo', 'mfi', 'macd', 'sma', 'aroon', 'rsi', 'bollinger', 'b_indicator']
+            if tick == "True" and text in list_bots and text in all_bots:
                 self.send_message("You have already subscribed to this tradebot", chat)
+                continue
+            if tick == "False" and text not in list_bots and text in all_bots:
+                self.send_message("You are not subscribed to this tradebot", chat)
                 continue
             if text == "/start":
                 self.send_message("Hello! Here you can subscribe on a single tradebot or all available and track the price.", chat)
             elif text == "/sub_all":
-                data[str(chat)] = ['cci','macd','mfi']#list of all bots
+                data[str(chat)] = all_bots#list of all bots
                 with open('data.json', 'w') as fp:
                     json.dump(data, fp)
-                self.send_message("Your subscribed to all tradebots", chat)
-            elif text == "/sub_par" or text =="/not_freq":
-                new_l = []
-                message = ""
-                if text =="/sub_par":
-                    new_l = bots
-                    message = "Choose bot"
+                self.send_message("You subscribed to all tradebots", chat)
+            elif text == "/unsub_all":
+                data[str(chat)] = []
+                with open('data.json', 'w') as fp:
+                    json.dump(data, fp)
+                self.send_message("You unsubscribed from all tardebots", chat)
+            elif text == "/sub_par" or text == "/unsub_par":
+                if text == "/sub_par":
+                    tick = "True"
                 else:
-                    new_l = frequency
-                    message = "Choose time interval to receive announcements from tradebots"
-                keyboard = self.build_keyboard(new_l)
-                self.send_message(message, chat, keyboard)
+                    tick = "False"
+                print(tick)
+                with open("Ticker.txt", "w") as tf:
+                    tf.write(tick)
+                keyboard = self.build_keyboard(bots)
+                self.send_message("Choose bot", chat, keyboard)
             elif text == "cci":
-                list_bots.append('cci')
+                if tick == "True":
+                    list_bots.append('cci')
+                    message = "You have successfully subscribed"
+                else:
+                    list_bots.remove('cci')
+                    message = "You have successfully unsubscribed"
                 data[str(chat)] = list_bots
                 with open('data.json', 'w') as fp:
                     json.dump(data, fp)
-                self.send_message("You have successfully subscribed", chat)
+                self.send_message(message, chat)
             elif text == "mfi":
-                list_bots.append('mfi')
+                if tick == "True":
+                    list_bots.append('mfi')
+                    message = "You have successfully subscribed"
+                else:
+                    list_bots.remove('mfi')
+                    message = "You have successfully unsubscribed"
                 data[str(chat)] = list_bots
                 with open('data.json', 'w') as fp:
                     json.dump(data, fp)
-                self.send_message("You have successfully subscribed", chat)
+                self.send_message(message, chat)
             elif text == "ppo":
-                list_bots.append('ppo')
+                if tick == "True":
+                    list_bots.append('ppo')
+                    message = "You have successfully subscribed"
+                else:
+                    list_bots.remove('ppo')
+                    message = "You have successfully unsubscribed"
                 data[str(chat)] = list_bots
                 with open('data.json', 'w') as fp:
                     json.dump(data, fp)
-                self.send_message("You have successfully subscribed", chat)
+                self.send_message(message, chat)
             elif text == "macd":
-                list_bots.append('macd')
+                if tick == "True":
+                    list_bots.append('macd')
+                    message = "You have successfully subscribed"
+                else:
+                    list_bots.remove('macd')
+                    message = "You have successfully unsubscribed"
                 data[str(chat)] = list_bots
                 with open('data.json', 'w') as fp:
                     json.dump(data, fp)
-                self.send_message("You have successfully subscribed", chat)
+                self.send_message(message, chat)
             else:
                 self.send_message("Type '/' to view commands", chat)
 
