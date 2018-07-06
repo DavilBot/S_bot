@@ -6,10 +6,11 @@ import urllib
 import os.path
 import threading
 import pandas as pd
+#from cci_bot import CciBot
 TOKEN = "592999139:AAEpQFDBQ4s-pgjUNGEfsQVHGdiop4b0pi0"
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 
-class TeleTradeBot():
+class SubscriberBot():
     def get_url(self, url):
         response = requests.get(url)
         content = response.content.decode("utf8")
@@ -40,11 +41,11 @@ class TeleTradeBot():
             list_bots = []
             data = {}
             tick = "False"
-            message = ""
             if(os.path.isfile('data.json') and os.path.isfile('Ticker.txt')):
                 with open('data.json', 'r') as fp:
                         data = json.load(fp)
-                        list_bots = data[str(chat)]
+                        if str(chat) in data:
+                            list_bots = data[str(chat)]
                 with open('Ticker.txt', 'r') as r:
                         tick = r.read()
             bots = [['cci', 'ppo', 'mfi'], ['macd', 'sma', 'aroon'], ['rsi', 'bollinger', 'b_indicator']]
@@ -72,57 +73,27 @@ class TeleTradeBot():
                     tick = "True"
                 else:
                     tick = "False"
-                print(tick)
                 with open("Ticker.txt", "w") as tf:
                     tf.write(tick)
                 keyboard = self.build_keyboard(bots)
                 self.send_message("Choose bot", chat, keyboard)
-            elif text == "cci":
-                if tick == "True":
-                    list_bots.append('cci')
-                    message = "You have successfully subscribed"
-                else:
-                    list_bots.remove('cci')
-                    message = "You have successfully unsubscribed"
-                data[str(chat)] = list_bots
-                with open('data.json', 'w') as fp:
-                    json.dump(data, fp)
-                self.send_message(message, chat)
-            elif text == "mfi":
-                if tick == "True":
-                    list_bots.append('mfi')
-                    message = "You have successfully subscribed"
-                else:
-                    list_bots.remove('mfi')
-                    message = "You have successfully unsubscribed"
-                data[str(chat)] = list_bots
-                with open('data.json', 'w') as fp:
-                    json.dump(data, fp)
-                self.send_message(message, chat)
-            elif text == "ppo":
-                if tick == "True":
-                    list_bots.append('ppo')
-                    message = "You have successfully subscribed"
-                else:
-                    list_bots.remove('ppo')
-                    message = "You have successfully unsubscribed"
-                data[str(chat)] = list_bots
-                with open('data.json', 'w') as fp:
-                    json.dump(data, fp)
-                self.send_message(message, chat)
-            elif text == "macd":
-                if tick == "True":
-                    list_bots.append('macd')
-                    message = "You have successfully subscribed"
-                else:
-                    list_bots.remove('macd')
-                    message = "You have successfully unsubscribed"
-                data[str(chat)] = list_bots
-                with open('data.json', 'w') as fp:
-                    json.dump(data, fp)
-                self.send_message(message, chat)
+            elif text in all_bots:
+                self.add_del_bot(chat, text, tick, list_bots, data)
             else:
                 self.send_message("Type '/' to view commands", chat)
+
+    def add_del_bot(self, chat, text, tick, list_bots, data):
+        message = ""
+        if tick == "True":
+            list_bots.append(text)
+            message = "You have successfully subscribed"
+        else:
+            list_bots.remove(text)
+            message = "You have successfully unsubscribed"
+        data[str(chat)] = list_bots
+        with open('data.json', 'w') as fp:
+            json.dump(data, fp)
+        self.send_message(message,chat)
 
     def get_last_chat_id_and_text(self, updates):
         num_updates = len(updates["result"])
@@ -157,6 +128,6 @@ class TeleTradeBot():
 
 
 if __name__ == '__main__':
-        obj = TeleTradeBot()
+        obj = SubscriberBot()
         obj.main()
 
