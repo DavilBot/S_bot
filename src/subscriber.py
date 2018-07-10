@@ -8,10 +8,11 @@ import threading
 import pandas as pid
 import subprocess
 from cci_bot import CciBot
-TOKEN = "592999139:AAEpQFDBQ4s-pgjUNGEfsQVHGdiop4b0pi0"
+from macd_bot import MacdBot
+TOKEN = "550693266:AAF7r6fsLpfhWRUyWH4te_IFY1IOFoQjRWs"
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 
-class SubscriberBot(CciBot):
+class SubscriberBot(MacdBot,CciBot):
     def get_url(self, url):
         response = requests.get(url)
         content = response.content.decode("utf8")
@@ -68,7 +69,7 @@ class SubscriberBot(CciBot):
                 data[str(chat)] = []
                 with open('data.json', 'w') as fp:
                     json.dump(data, fp)
-                self.send_message("You unsubscribed from all tardebots", chat)
+                self.send_message("You unsubscribed from all tradebots", chat)
             elif text == "/sub_par" or text == "/unsub_par":
                 if text == "/sub_par":
                     tick = "True"
@@ -110,34 +111,32 @@ class SubscriberBot(CciBot):
             url += "&reply_markup={}".format(reply_markup)
         self.get_url(url)
 
-    def bot_send_message(self, text):
+    def bot_send_message(self, text, key):
             data = {}
             if os.path.isfile('data.json'):
                 with open('data.json', 'r') as fp:
                     data = json.load(fp)
             for v in data:
-                if 'cci' in data[v]:
-                    print(text + "OLEEE")
-                    self.send_message(text, int(v))
+                if key in data[v]:
+                    self.send_message(key+" "+text,int(v))
 
     def build_keyboard(self, items):
         keyboard = items#[[item] for item in items]
         reply_markup = {"keyboard":keyboard, "one_time_keyboard": True}
         return json.dumps(reply_markup)
 
-    def run(self, string):
-        cmd = 'python ' + string
-        PIPE = subprocess.PIPE
-        p = subprocess.Popen(cmd, shell = True)
-        p.wait()
+    def threads_runner(self, func_names):
+        for f in func_names:
+            threads = threading.Thread(target=f, args=())
+            threads.daemon = True
+            threads.start()
 
     def main(self):
         last_update_id = None
         self.__init__()
         super().__init__()
-        threads = threading.Thread(target=super().trade_on, args=())
-        threads.daemon = True
-        threads.start()
+        func_names = [super().trade_on_cci, super().trade_on_macd]
+        self.threads_runner(func_names)
         while True:
             updates = self.get_updates(last_update_id)
             if len(updates["result"]) > 0:

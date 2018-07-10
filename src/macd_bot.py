@@ -1,6 +1,7 @@
 from trade_bot import TradeBot
 import json
 import pandas as pd
+from utils.notifications import Notifications
 from pyti.moving_average_convergence_divergence import moving_average_convergence_divergence
 import time
 
@@ -13,7 +14,8 @@ class MacdBot(TradeBot):
         # self.ema_days = j['ema']
         self.macd_days = j['macd']
         self.log = open("log_macd.txt", "a")
-        print ("balance btc  {} coin {} status {}".format(self.btc_amount, self.coin_amount, self.isBTC))
+        # self.notifier = Notifications()
+        # print ("balance btc  {} coin {} status {}".format(self.btc_amount, self.coin_amount, self.isBTC))
 
     def calc_grades(self, from_binance=False):
         self.df = self.get_prices(from_binance)
@@ -122,6 +124,8 @@ class MacdBot(TradeBot):
                     print ("index ", i)
                     print ("Sell", self.amount, self.df['Close'][i+1])
             self.prev_price = self.df['Close'][i+1]
+        if not self.isBTC:
+            self.amount = self.amount*self.df['Close'][len(self.df) -1]*0.9995
         print ('finally', self.amount)
         print ( "accuracy {} / {}".format(success_count, count))
 
@@ -174,34 +178,42 @@ class MacdBot(TradeBot):
     def get_profit_stop(self, price_cur, price_prev, margin=0.01):
         return (price_cur - price_prev)/ price_prev > margin
 
-    def trade_on(self):
+    def trade_on_macd(self):
         self.calc_grades()
+        self.init = True
         while True:
-            row = self.df.iloc[-1]
-            data = self.get_candle_based_on_time(start_time=int(row['TimeStamp']*1000+1000))
-            print(len(data))
-            if len(data) > 1:
-                #calc grades
-                data = self.EMA(ema_days=5, data=data)
-                data = self.EMA(ema_days=35, data=data)
-                data = self.MACD(data=data)
-                data = self.macd_signal(data=data)
-                self.df = data
-                self.df.drop(self.df.tail(1).index, inplace=True)
-                #end
-                if self.check_trade_condition():
-                    self.get_trade_balance()
-                    self.notifier.sendLogMsg("my balance btc {} {} {}".format(
-                        self.btc_amount, self.symbol, self.coin_amount))
-
-                print("my balance btc {} {} {}".format(
-                    self.btc_amount, self.symbol, self.coin_amount))
-                self.log.write("my balance btc {} {} {}\n".format(
-                    self.btc_amount, self.symbol, self.coin_amount))
-                self.log.flush()
+            # row = self.df.iloc[-1]
+            # data = self.get_candle_based_on_time(start_time=int(row['TimeStamp']*1000+1000))
+            # print(len(data))
+            # if len(data) > 1:
+            #     #calc grades
+            #     data = self.EMA(ema_days=5, data=data)
+            #     data = self.EMA(ema_days=35, data=data)
+            #     data = self.MACD(data=data)
+            #     data = self.macd_signal(data=data)
+            #     length = len(self.df)
+            #     for index, row in data.iterrows():
+            #         self.df.loc[index+length] = row
+            #     self.df.drop(self.df.tail(1).index, inplace=True)
+            #     self.df = self.df.shift(-len(self.df)+5)[:-len(self.df)+5]
+            #     #end
+            #     if self.check_trade_condition():
+            #         self.get_trade_balance()
+            #         self.bot_send_message(
+            #             "my balance btc {} {} {}".format(self.btc_amount, self.symbol, self.coin_amount))
+            #         # self.notifier.sendLogMsg("my balance btc {} {} {}".format(
+            #         #     self.btc_amount, self.symbol, self.coin_amount))
+            #
+            #     print("my balance btc {} {} {}".format(
+            #         self.btc_amount, self.symbol, self.coin_amount))
+            #     self.log.write("my balance btc {} {} {}\n".format(
+            #         self.btc_amount, self.symbol, self.coin_amount))
+            #     self.log.flush()
+            self.bot_send_message("my balance btc 0.3231","macd")
             time.sleep(15)
 
     def check_trade_condition(self):
+        return True
         i = len(self.df) - 1
         # if not self.bought_price:
         #     self.bought_price = self.df['Close'][i]
@@ -210,14 +222,14 @@ class MacdBot(TradeBot):
                 coin_amount = self.amount / self.df['Close'][i] * 0.9995
                 print ("Buy coin_quantity {} price {}".format(coin_amount,
                                                     self.df['Close'][i]))
-                # self.notifier.sendLogMsg("Buy Condition %f\n" % (self.df['Grade'][i]))
-                self.log.write("Buy Condition")
+                self.notifier.sendLogMsg("Buy Condition")
+                # self.log.write("Buy Condition")
                 self.order_coin_btc(i)
                 return True
         else:
             if self.check_sell_condition(i):
-                # self.notifier.sendLogMsg("Sell Condition %f\n" % (self.df['Grade'][i]))
-                self.log.write("Sell Condition")
+                self.notifier.sendLogMsg("Sell Condition")
+                # self.log.write("Sell Condition")
                 self.order_coin_btc(i)
                 return True
         return False
@@ -227,8 +239,8 @@ class MacdBot(TradeBot):
         data = self.get_candle_based_on_time(start_time=int(row['TimeStamp'] * 1000 + 1000))
         if self.isBTC:
             side = "BUY"
-            # price = data['Close'][len(data) - 1]
-            price = data['Close'][last_index]
+            price = data['Close'][len(data) - 1]
+            # price = data['Close'][last_index]
             amount = self.btc_amount / price * .95 // 0.01 / 100
         else:
             side = "SELL"
@@ -242,6 +254,6 @@ class MacdBot(TradeBot):
 if __name__== '__main__':
     DOS_PUB = "z6fQcrTPseYt0vQeCyIoINlOZybA6yMs8mUe41vRdgLukEq8z43zhoCTCLi1RQoI"
     DOS_SECRET = 's6Cb9JJsmmMcEn0VQ8aLdAfap8LUeWvJaBKHeoNtAb2qnfZOpVA8We3xdoa9mJmD'
-    bot = MacdBot(token=DOS_PUB, secret=DOS_SECRET, isBTC=True, amount=0.012)
+    bot = MacdBot(token=DOS_PUB, secret=DOS_SECRET, isBTC=True, amount=0.012, symbol="ETCBTC")
     # bot.get_backtest(limit=1000)
-    bot.trade_on()
+    bot.trade_on_macd()

@@ -176,7 +176,7 @@ class CciBot(TradeBot):
     def print_amount(self):
         print(self.amount)
 
-    def trade_on(self):
+    def trade_on_cci(self):
         self.init = True
         while True:
             self.calc_grades(from_binance = True)
@@ -184,7 +184,7 @@ class CciBot(TradeBot):
             # self.get_etc_btc_balance()
             if self.check_trade_condition():
                 self.get_trade_balance()
-                self.bot_send_message("my balance btc {} {} {}".format(self.btc_amount, self.symbol, self.coin_amount))
+                self.bot_send_message("my balance btc {} {} {}".format(self.btc_amount, self.symbol, self.coin_amount), "cci")
                # self.notifier.sendLogMsg("my balance btc {} {} {}".format(
                    # self.btc_amount, self.symbol, self.coin_amount))
 
@@ -203,7 +203,7 @@ if __name__ == '__main__':
                  secret=DOS_SECRET,
                  isBTC=True, amount=0.012, symbol="ETCBTC")
     # bot.calc_grades()
-    bot.trade_on()
+    bot.trade_on_cci()
     # print(bot.get_balance().json())
     # print(bot.get_last_orders().json())
     # bot.get_backtest()
