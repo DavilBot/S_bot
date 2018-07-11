@@ -38,7 +38,11 @@ class SubscriberBot(MacdBot,CciBot):
 
     def handle_updates(self, updates):
         for update in updates["result"]:
-            text = update["message"]["text"]
+            print(update["message"])
+            if 'text' in update["message"]:
+                text = update["message"]["text"]
+            else:
+                continue
             chat = update["message"]["chat"]["id"]
             list_bots = []
             data = {}
@@ -139,10 +143,12 @@ class SubscriberBot(MacdBot,CciBot):
         self.threads_runner(func_names)
         while True:
             updates = self.get_updates(last_update_id)
-            if len(updates["result"]) > 0:
-                last_update_id = self.get_last_update_id(updates) + 1
-                self.handle_updates(updates)
-            time.sleep(0.5)
+            print(updates)
+            if "result" in updates:
+                if len(updates["result"]) > 0:
+                    last_update_id = self.get_last_update_id(updates) + 1
+                    self.handle_updates(updates)
+                time.sleep(0.5)
 
 
 if __name__ == '__main__':
