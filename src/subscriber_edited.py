@@ -130,11 +130,12 @@ class SubscriberBot():
                 self.send_message(queue["bot"] + " " + queue["text"], int(v))
         print(body)
         ch.basic_ack(delivery_tag = method.delivery_tag)
+
     def channel(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         channel = connection.channel()
-        channel.queue_declare(queue='hello')
-        channel.basic_consume(self.bot_send_message, queue = 'hello')
+        channel.queue_declare(queue='subscriber')
+        channel.basic_consume(self.bot_send_message, queue = 'subscriber')
         print('[*] Waiting for messages. To exit press CRTL + C')
         channel.start_consuming()
 
